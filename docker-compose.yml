@@ -1,0 +1,97 @@
+# docker-compose default
+# version: "2"
+
+# services:
+#   prom-1:
+#     image: quay.io/prometheus/prometheus
+#     command:
+#     - --config.file=/etc/prometheus/prometheus.yml
+#     volumes:
+#     - ./prometheus-1.yml:/etc/prometheus/prometheus.yml
+#     ports:
+#     - "9091:9090"
+#   sidecar-1:
+#     image: quay.io/thanos/thanos:v0.32.3
+#     command:
+#     - sidecar
+#     - --prometheus.url=http://prom-1:9090
+#   prom-2:
+#     image: quay.io/prometheus/prometheus
+#     command:
+#     - --config.file=/etc/prometheus/prometheus.yml
+#     volumes:
+#     - ./prometheus-2.yml:/etc/prometheus/prometheus.yml
+#     ports:
+#     - "9092:9090"
+#   sidecar-2:
+#     image: quay.io/thanos/thanos:v0.32.3
+#     command:
+#     - sidecar
+#     - --prometheus.url=http://prom-2:9090
+#   querier:
+#     image: quay.io/thanos/thanos:v0.32.3
+#     command:
+#     - query
+#     - --endpoint=sidecar-1:10901
+#     - --endpoint=sidecar-2:10901
+#     ports:
+#     - "10902:10902"
+
+# docker-compose distributed
+version: "2"
+
+services:
+  prom-1:
+    image: quay.io/prometheus/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus-1.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+  sidecar-1:
+    image: quay.io/thanos/thanos:v0.32.3
+    command:
+      - sidecar
+      - --prometheus.url=http://prom-1:9090
+  querier-1:
+    image: quay.io/thanos/thanos:v0.32.3
+    command:
+      - query
+      - --endpoint=sidecar-1:10901
+    ports:
+      - "10903:10902"
+      - "10905:10901"
+
+  prom-2:
+    image: quay.io/prometheus/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus-2.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9092:9090"
+  sidecar-2:
+    image: quay.io/thanos/thanos:v0.32.3
+    command:
+      - sidecar
+      - --prometheus.url=http://prom-2:9090
+  querier-2:
+    image: quay.io/thanos/thanos:v0.32.3
+    command:
+      - query
+      - --endpoint=sidecar-2:10901
+    ports:
+      - "10904:10902"
+      - "10906:10901"
+
+  querier:
+    image: quay.io/thanos/thanos:v0.32.3
+    command:
+      - query
+      - --endpoint-strict=querier-1:10901
+      - --endpoint-strict=querier-2:10901
+      - --query.promql-engine=thanos
+      - --query.mode=distributed
+    ports:
+      - "10902:10902"
